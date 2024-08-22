@@ -1,0 +1,11 @@
+services:
+  todo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:3000"
+    container_name: todo
+    restart: always
+    environment:
+      - MONGODB_URI=mongodb+srv://meysambhrmi:US4QZwIvlPbyClH9@cluster0.erlyr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
