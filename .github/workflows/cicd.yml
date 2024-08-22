@@ -1,0 +1,42 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy project to runner server
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          BACKUP_DIR="/var/backups/nextjs-app/$TIMESTAMP"
+          APP_DIR="/app/todo"
+          mkdir -p $BACKUP_DIR
+          mkdir -p $APP_DIR
+          cp -r $APP_DIR* $BACKUP_DIR/
+          rsync -av --delete . $APP_DIR
+
+      - name: Docker Compose Build
+        run: |
+          cd /path/to/your/app
+          docker-compose build
+
+      - name: Docker Compose Up
+        run: |
+          cd /path/to/your/app
+          docker-compose down || true
+          docker-compose up -d
+
+      - name: Clean up old backups
+        run: |
+          find /var/backups/nextjs-app/ -type d -mtime +30 -exec rm -rf {} \;
