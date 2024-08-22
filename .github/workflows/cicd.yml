@@ -28,12 +28,14 @@ jobs:
 
       - name: Docker Compose Build
         run: |
-          cd /path/to/your/app
+          APP_DIR="~/app/todo"        
+          cd $APP_DIR
           docker-compose build
 
       - name: Docker Compose Up
         run: |
-          cd /path/to/your/app
+          APP_DIR="~/app/todo"        
+          cd $APP_DIR        
           docker-compose down || true
           docker-compose up -d
 
