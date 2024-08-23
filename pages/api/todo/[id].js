@@ -1,26 +1,37 @@
 import connectDb from '../../../lib/connectDb';
 import Todo from '../../../models/Todo';
+import { httpRequestDurationMicroseconds } from '../../../lib/metrics';
 
-export default async function Handler(req, res) {
-    try {
-        if (req.method === 'PATCH') {
-            await connectDb();
-            const updatedTodo = await Todo.findByIdAndUpdate(
-                req.query.id,
-                { $set: req.body },
-                { new: true },
-            );
-            res.status(201).json({ message: 'Todo updated', updatedTodo });
-        } else if (req.method === 'DELETE') {
-            await connectDb();
-            const deletedTodo = await Todo.findByIdAndDelete(req.query.id);
-            res.status(201).json({ message: 'Todo deleted' });
+export default async function handler(req, res) {
+  const end = httpRequestDurationMicroseconds.startTimer();
+  const { method, query: { id }, body } = req;
+
+  await connectDb();
+
+  try {
+    switch (method) {
+      case 'PUT':
+        const todo = await Todo.findById(id);
+        if (!todo) {
+          res.status(404).json({ success: false, message: 'Todo not found' });
         } else {
-            res.status(400).json({ message: 'Invalid HTTP method' });
-            throw new Error('Invalid HTTP method');
+          todo.completed = body.completed !== undefined ? body.completed : todo.completed;
+          todo.important = body.important !== undefined ? body.important : todo.important;
+          await todo.save();
+          res.status(200).json({ success: true, data: todo });
         }
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({ message: err });
+        break;
+
+      // Handle other methods (GET, DELETE, etc.) here
+
+      default:
+        res.setHeader('Allow', ['PUT']);
+        res.status(405).end(`Method ${method} Not Allowed`);
     }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  } finally {
+    end({ method, route: `/api/todo/${id}`, status_code: res.statusCode });
+  }
 }
+
